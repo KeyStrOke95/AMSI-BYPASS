@@ -1,16 +1,26 @@
-# Search Implementation
-$MemoryToScan = [byte[]]::new(0x1000) # Example buffer size
-$BytesRead = 0
-$Success = [ObfAPIs]::ReadProcessMemory($Address, [IntPtr]$Pointer, $MemoryToScan, $MemoryToScan.Length, [ref]$BytesRead)
-
-if ($Success) {
-    Write-Host "[*] Memory read successfully. Bytes read: $BytesRead"
-    for ($i = 0; $i -lt $MemoryToScan.Length; $i++) {
-        $Chunk = [BitConverter]::ToString($MemoryToScan[$i..($i + 7)])
-        Write-Host "[$i] Chunk: $Chunk"
+# Memory Search Function
+function Perform-MemorySearch {
+    param (
+        [IntPtr]$Address,
+        [IntPtr]$Pointer,
+        $InitOffset,
+        $NegOffset,
+        $MaxOffset,
+        $ReadSize
+    )
+    $Buffer = [byte[]]::new($ReadSize)
+    $BytesRead = 0
+    for ($Offset = $InitOffset; $Offset -lt $MaxOffset; $Offset += $NegOffset) {
+        $CurrentAddress = [IntPtr]::Add($Pointer, -$Offset)
+        $Success = [ObfAPIs]::ReadProcessMemory($Address, $CurrentAddress, $Buffer, $Buffer.Length, [ref]$BytesRead)
+        if ($Success -and $BytesRead -gt 0) {
+            Write-Host "[*] Data read at offset $Offset: $($Buffer[0..15] -join ' ')"
+        }
     }
-} else {
-    Write-Host "[!] Memory read failed. Check permissions."
 }
+
+$Settings = Initialize-MemorySearch -InitOffset 0x50000 -NegOffset 0x50000 -MaxOffset 0x1000000 -ReadSize 0x50000
+$ProcessHandle = [ObfAPIs]::GetCurrentProcess()
+Perform-MemorySearch -Address $ProcessHandle -Pointer [IntPtr]0x12345678 -InitOffset $Settings.InitOffset -NegOffset $Settings.NegOffset -MaxOffset $Settings.MaxOffset -ReadSize $Settings.ReadSize
 
 Write-Host "[*] Script execution completed."
