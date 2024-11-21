@@ -1,11 +1,28 @@
-# Variable Obfuscation
-$ObfString = "bWFnZW5ldGljLXN0cmluZw==" # Base64 encoding
-$DecodedString = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($ObfString))
+# Function Declaration and Initial Setup
+function Initialize-MemorySearch {
+    param (
+        $InitOffset = 0x50000,
+        $NegOffset = 0x50000,
+        $MaxOffset = 0x1000000,
+        $ReadSize = 0x50000
+    )
+    $APIs = @"
+using System;
+using System.Runtime.InteropServices;
+public class ObfAPIs {
+    [DllImport("kernel32.dll")]
+    public static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, uint nSize, ref uint lpNumberOfBytesRead);
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr GetCurrentProcess();
+}
+"@
+    Add-Type $APIs
+    return @{
+        InitOffset = $InitOffset;
+        NegOffset = $NegOffset;
+        MaxOffset = $MaxOffset;
+        ReadSize = $ReadSize;
+    }
+}
 
-# Handle Initialization
-$Address = [ObfAPIs]::GetCurrentProcess()
-$StringToSearch = $DecodedString.Replace("-", "").Replace("c", "z")
-$Pointer = 0x12345678 # Placeholder for demonstration purposes
-
-Write-Host "[*] Initialized with decoded string: $DecodedString"
-Write-Host "[*] Searching string: $StringToSearch"
+Write-Host "[*] Function and memory initialization loaded."
