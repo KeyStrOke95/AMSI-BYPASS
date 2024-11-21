@@ -1,16 +1,11 @@
-$ObfInit = Get-Date;
+# Variable Obfuscation
+$ObfString = "bWFnZW5ldGljLXN0cmluZw==" # Base64 encoding
+$DecodedString = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($ObfString))
 
-$Str = [Text.Encoding]::ASCII.GetString([Convert]::FromBase64String('bWFnaWMsc2NyaXB0'))
-$Str2 = $Str.Replace('ma', 'xy').Replace('gi', 'z').Replace('c,', '!')
-$Str3 = $Str.Replace('sc', 'py').Replace('ript', 'zz')
+# Handle Initialization
+$Address = [ObfAPIs]::GetCurrentProcess()
+$StringToSearch = $DecodedString.Replace("-", "").Replace("c", "z")
+$Pointer = 0x12345678 # Placeholder for demonstration purposes
 
-$Module = [APIs]::GetModuleHandle($Str)
-$Func = [APIs]::GetProcAddress($Module, $Str2 + $Str3)
-
-$Assemblies = [AppDomain]::CurrentDomain.GetAssemblies() | ForEach-Object {
-    if ($_.Location -ne $null) {
-        $_.GetTypes()
-    }
-}
-
-$FuncPtr = $Assemblies[0].Methods[0].MethodHandle.GetFunctionPointer()
+Write-Host "[*] Initialized with decoded string: $DecodedString"
+Write-Host "[*] Searching string: $StringToSearch"
